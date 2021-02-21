@@ -1,0 +1,172 @@
+import json
+
+#grafovi
+import plotly.graph_objects as go
+import matplotlib.pyplot as plt
+
+import blockcypher
+from blockcypher import get_transaction_details
+
+import requests
+
+import nomics
+from nomics import Nomics
+import pandas as pd
+from datetime import datetime
+
+from pycoingecko import CoinGeckoAPI
+
+
+def main():
+    
+    flag = 99
+    choice= 99
+    cg = CoinGeckoAPI()
+    
+    while flag != '0':
+        print("Ako želite informacije o transakciji, upišite 1")
+        print("Ako želite informacije o bloku, upišite 2")
+        print("Ako želite informacije o bitcoinu, upišite 3")
+        print("Ako želite informacije o povijesti bitcoina, upišite 4")
+        print("Ako želite prekinuti, upišite 0")
+        flag = input()
+        if flag == '1':
+            print("Unesi HASH transakcije o kojoj želiš detalje: \n")
+            transaction = input()
+            a = get_transaction_details(transaction)
+            duzina = len(a['outputs'])
+            print("Adrese na koje je poslan bitcoin: ")
+            for x in range (0, duzina):
+                print(a['outputs'][x]['addresses']," Količina poslana na adresu: ", a['outputs'][x]['value']*0.00000001,"BTC")
+                
+            print("\n")
+            print("Adresa s koje je poslan Bitcoin: ",a['inputs'][0]['addresses'],"\n","Ukupni poslani novac u Bitcoinu", a['total']*0.00000001,"BTC","\n","Isplata rudarima: ", a['fees']*0.00000001,"BTC","\n","Broj potvrda: ", a['confirmations'],"\n","Datum zaprimanja transkacije: ", a['received'],"\n")
+        
+        if flag == '2':
+            print("Ukoliko želite informacije o proizvoljnom bloku, upiši visinu bloka.")
+            print("Ako ne želite proizvoljan blok već samo informacije o zadnjem bloku, upiši 0")
+            visina_bloka = input()
+            
+            if visina_bloka > '0':
+                visina_bloka = str(visina_bloka)
+                pocetak = 'https://blockchain.info/block-height/'
+                kraj = '?format=json'
+                visina_bloka = pocetak + visina_bloka + kraj
+                r = requests.get(visina_bloka)
+                data = r.json()
+                #printat ćemo o danom blocku određene informacije
+                print(" Hash bloka :",data['blocks'][0]['hash'],"\n","Prijašnji blok: ", data['blocks'][0]['prev_block'],"\n","Sljedeći blok: ", data['blocks'][0]['next_block'],"\n","Veličina bloka: ", data['blocks'][0]['size'],"bytes\n","Broj transakcija: ",data['blocks'][0]['n_tx'])
+                #hash, prev_block, next_block, size,
+                
+                
+            if visina_bloka == '0':
+                s = blockcypher.get_latest_block_height()
+                print("Zadnjih 5 blokova: \n", s, "\n", s-1, "\n", s-2, "\n", s-3, "\n", s-4)
+                s = str(s)
+                pocetak = 'https://blockchain.info/block-height/'
+                kraj = '?format=json'
+                s = pocetak + s + kraj
+                #ovi string triba automatizirat s dobivenim zadnjim blokom
+                #dobavljamo info o zadnjem bloku
+                r = requests.get(s)
+                data = r.json()
+                #printat ćemo o danom blocku određene informacije
+                print(" Hash zadnjeg bloka :",data['blocks'][0]['hash'],"\n","Prijašnji blok: ", data['blocks'][0]['prev_block'],"\n","Sljedeći blok: ", data['blocks'][0]['next_block'],"\n","Veličina bloka: ", data['blocks'][0]['size'],"bytes\n","Broj transakcija: ",data['blocks'][0]['n_tx'])
+                #hash, prev_block, next_block, size,
+                #print(data['blocks'][0]['hash'])
+        
+        
+        if flag == '3':
+
+            while choice != '0':
+
+                #p = cg.get_price(ids = 'bitcoin', vs_currencies = 'usd')
+                r = cg.get_coin_by_id(id = 'bitcoin')
+                market_data = r.get('market_data')
+                
+                print("Za vrijednost Bitcoina u valutama upišite 1")
+                print("Za promjenu cijene u intervalu od 24h upišite 2")
+                print("Za promjenu cijene u intervalu od 7 dana upišite 3")
+                print("Za promjenu cijene u intervalu od 30 dana upišite 4")
+                print("Za promjenu cijene u intervalu od jedne godine upišite 5")
+                print("Ukoliko želite prekinuti, upišite 0")
+                choice = input()
+                if choice == '1':
+                #vrijednosti u valutama
+                    current_worth_in_value = market_data.get('current_price')
+                    print("Američki dolar: ", current_worth_in_value['usd'],"$")
+                    print("Australski dolar: ", current_worth_in_value['aud'],"$")
+                    print("Kanadski dolar: ", current_worth_in_value['cad'],"$")
+                    print("Kineski yuan: ", current_worth_in_value['cny'],"¥\n")
+                
+                if choice == '2':
+                #promjene cijene u intervalima
+                    change_in_24h = market_data.get('price_change_percentage_24h')
+                    print("Promjena vrijednosti Bitcoina u zadnja 24 sata je: ", change_in_24h,"%\n")
+        
+                if choice == '3':
+                
+                    change_in_7d = market_data.get('price_change_percentage_7d')
+                    print("Promjena vrijednosti Bitcoina u zadnjih 7 dana je: ", change_in_7d,"%\n")
+        
+                if choice == '4':
+              
+                    change_in_30d = market_data.get('price_change_percentage_30d')
+                    print("Promjena vrijednosti Bitcoina u zadnjih mjesec dana je: ", change_in_30d,"%\n")
+        
+                if choice == '5':
+                
+                    change_in_1y = market_data.get('price_change_percentage_1y')
+                    print("Promjena vrijednosti Bitcoina u zadnjih godinu dana je: ", change_in_1y,"%\n")
+
+        if flag == '4':
+            nomics = Nomics("3a2ffe21b293b07c8f9bf7d9acde7984")
+            
+            print("Unesi datum početka u obliku YYYY-MM-DDTHH:MM:SSZ")
+            datum_pocetka = input()
+            print("Unesi datum kraja u obliku YYYY-MM-DDTHH:MM:SSZ")
+            datum_kraja = input()
+            datum_pocetka = str(datum_pocetka)
+            datum_kraja = str(datum_kraja)
+            
+            lista_vrijednosti_povijest = nomics.ExchangeRates.get_history(
+                currency = "BTC", 
+                start = datum_pocetka,
+                end = datum_kraja
+                )
+            for y in range(0, len(lista_vrijednosti_povijest)):
+                print("Datum :",lista_vrijednosti_povijest[y]['timestamp']," Cijena: ", lista_vrijednosti_povijest[y]['rate'],"$")
+            print("\n")
+
+
+    #d = cg.get_coin_market_chart_range_by_id(id = 'bitcoin', vs_currency = 'ethereum', from_timestamp = '2019-01-01', to_timestamp = '2019-01-02')
+    #print(d)
+    
+    print("Za pogled na open, high, low i closing cijene bitcoina u intervalu vremena, upišite broj dana koji želite pregledati, 0 za preskočiti")
+    broj_dana = input()
+    if broj_dana != '0':
+        list_open_high_low_closing = cg.get_coin_ohlc_by_id('bitcoin', 'usd', broj_dana)
+    
+        #graf za razlike u cijenama kroz vrijeme
+        list_open = []
+        list_high = []
+        list_low = []
+        list_closing = []
+        
+        for x in list_open_high_low_closing:
+            list_open.append(x[1])
+            list_high.append(x[2])
+            list_low.append(x[3])
+            list_closing.append(x[4])
+            
+        plt.plot(list_open, label = "OPEN")
+        plt.plot(list_high, label = "HIGH")
+        plt.plot(list_low, label = "LOW")
+        plt.plot(list_closing, label = "CLOSING")
+        plt.show()
+
+      
+
+if __name__=="__main__":
+    main()
+    
